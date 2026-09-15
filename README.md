@@ -146,3 +146,5 @@ Row Level Security is enabled on every table; policies restrict most access to a
 members of the relevant startup. Mentor assignments, funding requests, and demo day
 evaluations described in the original project scope are not yet modeled — add them as new
 migrations under `db/migrations/` when that work starts.
+
+.

@@ -1,150 +1,154 @@
 # Startup Incubator Management System
 
 A full-stack application for managing startups, mentors, funding requests, milestones, and
-demo day evaluations within a startup incubator program. Backend and frontend are both
-TypeScript, backed by a [Supabase](https://supabase.com) (Postgres) database.
+demo day evaluations within a startup incubator program, backed by a
+[Supabase](https://supabase.com) (Postgres) database.
 
 ## Tech stack
 
-| Layer      | Choice                                                          |
-| ---------- | ---------------------------------------------------------------- |
-| Database   | Supabase (Postgres + Auth + Row Level Security)                 |
-| Migrations | Hand-written SQL, managed by the Supabase CLI                   |
-| Query layer| [Drizzle ORM](https://orm.drizzle.team) (typed, lightweight, optional) |
-| Backend    | Node.js + Express + TypeScript                                  |
-| Frontend   | React + Vite + TypeScript                                       |
-| Monorepo   | pnpm workspaces                                                  |
+| Layer      | Choice                                                     |
+| ---------- | ------------------------------------------------------------ |
+| Database   | Supabase Postgres, used as vanilla Postgres (no PostgREST/RLS/supabase-py) |
+| Auth       | Supabase Auth issues the JWT; the backend verifies it locally (PyJWT), no network call back to Supabase |
+| Migrations | Hand-written SQL, managed by the Supabase CLI               |
+| Backend    | Python + FastAPI, managed with [uv](https://docs.astral.sh/uv/) |
+| Frontend   | React + Vite + TypeScript, managed with pnpm                |
 
 ## Folder structure
 
 ```
 .
-├── packages/
-│   ├── backend/            # Express API (TypeScript)
-│   │   ├── src/
-│   │   │   ├── db/
-│   │   │   │   ├── client.ts   # Drizzle client (reads DATABASE_URL)
-│   │   │   │   └── schema.ts   # Drizzle table definitions, mirrors the SQL migrations
-│   │   │   └── index.ts        # Server entrypoint
-│   │   └── drizzle.config.ts
-│   └── frontend/           # React + Vite app (TypeScript)
-│       └── src/
-│           ├── lib/supabaseClient.ts
-│           ├── App.tsx
-│           └── main.tsx
-├── db/
-│   ├── config.toml         # Local Supabase stack config
-│   ├── migrations/         # Numbered, hand-written SQL migrations (source of truth for schema)
-│   └── seed.sql            # Local dev seed data, applied by `supabase db reset`
-├── pnpm-workspace.yaml
-└── package.json             # Root scripts that fan out to each package
+├── backend/                # Python/FastAPI backend — see backend/README.md
+│   ├── db/
+│   │   ├── config.toml         # Local Supabase stack config
+│   │   └── migrations/         # Numbered, hand-written SQL migrations (source of truth for schema)
+│   ├── src/app/
+│   │   ├── common/
+│   │   │   └── model.py        # Shared Pydantic base (camelCase JSON aliasing) — backend-wide common code lives here
+│   │   ├── db/
+│   │   │   ├── client.py       # SQLAlchemy engine/session (reads DATABASE_URL)
+│   │   │   ├── schema.py       # SQLAlchemy models, opt-in only (not used by default)
+│   │   │   └── migrate.py      # Utility: applies db/migrations/*.sql directly via uv
+│   │   ├── modules/
+│   │   │   ├── auth/               # Verifies the caller's JWT (PyJWT), authorization checks
+│   │   │   └── startups/           # One folder per business function: models/controller/router
+│   │   └── main.py             # App assembly — mounts each module's router
+│   ├── pyproject.toml
+│   └── .env.example
+└── frontend/                # React + Vite app (TypeScript), Tailwind v4 + shadcn/ui
+    ├── src/
+    │   ├── App.tsx
+    │   ├── main.tsx
+    │   ├── index.css
+    │   ├── components/          # Page sections + shadcn/ui primitives (components/ui/)
+    │   ├── hooks/
+    │   └── lib/
+    ├── public/
+    ├── components.json          # shadcn/ui CLI config
+    ├── package.json
+    └── .env.example
 ```
 
-Each package (`backend`, `frontend`) is self-contained with its own `package.json` and
-`tsconfig.json`, so collaborators can work on one side without needing to understand the
-other. Shared TypeScript compiler settings live in `tsconfig.base.json` at the root.
+`backend/` and `frontend/` are two independent, self-contained projects — no shared root
+tooling. `backend/` needs only `uv`; `frontend/` needs only `pnpm`.
 
 ## Prerequisites
 
-- Node.js 20+
-- [pnpm](https://pnpm.io) (`corepack enable` will pick up the version pinned in `package.json`)
+- [uv](https://docs.astral.sh/uv/) (for the backend) — installs its own Python if needed
+- Node.js 20+ and [pnpm](https://pnpm.io) (for the frontend)
 - [Supabase CLI](https://supabase.com/docs/guides/cli) (used via `npx supabase`, no global install required)
-- Docker (required by the Supabase CLI to run Postgres locally)
+- Docker (only needed if you run the Supabase CLI's local stack; not required if you point
+  `DATABASE_URL` at a hosted Supabase project instead)
 
 ## Getting started
 
-1. **Install dependencies**
+1. **Configure environment variables** — each project has its own `.env.example`:
 
    ```bash
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   ```
+
+   Fill in the real values (Supabase project settings from Project Settings → API in the
+   dashboard, or the local values printed by `supabase start` if running the stack locally).
+
+2. **Apply the database schema** — either via the Supabase CLI's local stack, or directly
+   against a hosted Postgres database. See "Database migrations" below and
+   `backend/README.md`.
+
+3. **Run the backend:**
+
+   ```bash
+   ./backend/dev.sh
+   ```
+
+   (Hardcodes the env file and port — see `backend/README.md` if you want the raw command
+   or need to change the port.)
+
+4. **Run the frontend** (separate terminal):
+
+   ```bash
+   cd frontend
    pnpm install
+   pnpm dev
    ```
 
-2. **Configure environment variables**
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Fill in `.env` with either your hosted Supabase project's credentials (Project Settings →
-   API in the dashboard), or the local values printed by `supabase start` in the next step.
-
-3. **Start the local Supabase stack** (Postgres, Auth, Studio)
-
-   ```bash
-   pnpm supabase:start
-   ```
-
-   This applies every migration in `db/migrations/` and then `db/seed.sql`
-   automatically. Studio is available at `http://127.0.0.1:54323`.
-
-4. **Run the backend and frontend** (in separate terminals)
-
-   ```bash
-   pnpm dev:backend
-   pnpm dev:frontend
-   ```
-
-   - Backend: http://localhost:3001/api/hello
+   - Backend: http://localhost:8000/api/hello (interactive docs at `/docs`)
    - Frontend: http://localhost:3000
 
 ## Database migrations
 
-Schema changes are made as plain SQL files under `db/migrations/`, applied in
-filename order — these are the source of truth for the schema, not the Drizzle definitions.
+Schema changes are made as plain SQL files under `backend/db/migrations/`, applied in
+filename order — these are the source of truth for the schema, not the SQLAlchemy models in
+`backend/src/app/db/schema.py`.
 
-- **Create a new migration:**
-
-  ```bash
-  pnpm db:new <migration_name>
-  ```
-
-  This creates a timestamped file under `db/migrations/`. Write your `CREATE TABLE`,
-  `ALTER TABLE`, etc. by hand in that file.
-
-- **Apply migrations locally** (drops and rebuilds the local DB from scratch, then re-seeds):
+- **Via the Supabase CLI** (from `backend/`, where `db/config.toml` lives):
 
   ```bash
-  pnpm db:reset
+  cd backend
+  supabase --workdir db migration new <migration_name>   # create a new migration file
+  supabase --workdir db start                             # start the local stack + apply migrations
+  supabase --workdir db db reset                          # rebuild the local DB from scratch
+  supabase --workdir db db push                           # push to a hosted Supabase project
   ```
 
-- **Push migrations to a hosted Supabase project:**
+- **Or directly with `uv`, no Supabase CLI/Docker needed** (useful against a hosted Postgres
+  database) — see `backend/README.md`'s "Applying migrations" section.
 
-  ```bash
-  pnpm db:push
-  ```
-
-- **After changing the schema**, update `packages/backend/src/db/schema.ts` to match, so the
-  Drizzle types (used by the backend's query layer) stay in sync with the actual database.
-
-### Using Drizzle
-
-Drizzle is optional and only used as a typed query builder against the schema that the SQL
-migrations define — it does not own migrations. See `packages/backend/src/db/client.ts` for
-the client and `packages/backend/src/db/schema.ts` for table definitions.
-
-```ts
-import { db } from "./db/client.js";
-import { role } from "./db/schema.js";
-
-const roles = await db.select().from(role);
-```
-
-If you'd rather skip Drizzle for a given query, `@supabase/supabase-js` is also available in
-both the backend and frontend for direct REST/RPC access to Supabase.
+- **After changing the schema**, update `backend/src/app/db/schema.py` to match.
 
 ## Schema
 
-The current schema (see `db/migrations/`) covers:
+The current schema (see `backend/db/migrations/`) covers:
 
-- `Role` — user roles (Admin, Mentor, Founder, Judge)
-- `User` — platform users, linked 1:1 to Supabase `auth.users`
-- `Startup` — registered startups
-- `Startup_Membership` — many-to-many link between users and startups, with a project role
-- `Milestone` — startup milestones with due dates, completion tracking, and mentor verification
+- `roles` — user roles (Admin, Mentor, Founder, Judge)
+- `users` — platform users, linked 1:1 to Supabase `auth.users`
+- `startups` — registered startups
+- `startup_memberships` — many-to-many link between users and startups, with a project role
+- `milestones` — startup milestones with due dates, completion tracking, and mentor verification
+- `mentor_requests` — a startup's ask for a mentor
+- `mentor_assignments` — a mentor matched to an approved request
+- `meetings` — a meeting between a mentor and a startup under an assignment
+- `funding_requests` — a startup's ask for funding
+- `demo_days` — a demo day event
+- `evaluations` — a judge's score sheet for a startup at a demo day
 
-Row Level Security is enabled on every table; policies restrict most access to admins and
-members of the relevant startup. Mentor assignments, funding requests, and demo day
-evaluations described in the original project scope are not yet modeled — add them as new
-migrations under `db/migrations/` when that work starts.
+Table and column names, and every status/role value stored in them, are plain lowercase
+snake_case (unquoted, standard Postgres convention) — not quoted CamelCase — so they behave
+predictably in psql, the Supabase SQL editor, and any raw SQL written against them.
 
-.
+Tables carry structural constraints only (`NOT NULL`, `CHECK`, `UNIQUE`, foreign keys with
+`ON DELETE` behavior, and indexes on FK columns). There is no Row Level Security, no guard
+triggers, and no RPC functions in the database — the frontend never talks to Postgres
+directly, so none of that would ever be evaluated for real traffic. Instead, all
+authorization and business-rule enforcement (who may decide a mentor/funding request,
+status-transition rules, role checks such as "the assigned mentor must have system role
+Mentor," "no evaluations after the demo day has passed," and signing up a new user's profile
+row) lives in the API layer:
+
+- `backend/src/app/modules/auth/auth.py` — verifies the caller's JWT locally (PyJWT + the
+  token issuer's signing secret, no network call back to it) and returns the current user.
+- `backend/src/app/modules/auth/permissions.py` — role/membership checks (`is_admin`,
+  `is_startup_member`, `is_startup_founder`, `require_role`,
+  `require_admin_or_startup_member`) that other modules' routes compose to decide what a
+  request may do.

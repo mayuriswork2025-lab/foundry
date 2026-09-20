@@ -39,7 +39,7 @@ export function NewStartupPage() {
 
   return (
     <Layout>
-      <main className="relative min-h-screen flex items-center justify-center px-6 py-32 overflow-hidden">
+      <main className="relative min-h-screen flex items-center justify-center px-6 pt-32 pb-80 overflow-hidden">
         {/* Same wildflower-valley imagery as the landing page footer, for continuity */}
         <img
           src="/images/footer-bg.png"

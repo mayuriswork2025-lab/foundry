@@ -6,7 +6,7 @@ export function MentorWelcomePage() {
 
   return (
     <Layout>
-      <main className="relative min-h-screen flex items-center justify-center px-6 py-32 overflow-hidden text-center">
+      <main className="relative min-h-screen flex items-center justify-center px-6 pt-32 pb-80 overflow-hidden text-center">
         {/* Same wildflower-valley imagery as the landing page footer, for continuity */}
         <img
           src="/images/hero-bg.png"

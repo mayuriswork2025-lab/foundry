@@ -9,6 +9,7 @@ here, not defined here.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .modules.auth.router import router as auth_router
 from .modules.startups.router import router as startups_router
 
 app = FastAPI()
@@ -26,4 +27,5 @@ def hello():
     return {"message": "Hello, world!"}
 
 
+app.include_router(auth_router)
 app.include_router(startups_router)

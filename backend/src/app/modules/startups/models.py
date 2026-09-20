@@ -21,3 +21,9 @@ class Startup(ApiModel):
     registration_status: str | None
     current_stage: str | None
     registered_by: uuid.UUID | None
+
+
+class StartupCreate(ApiModel):
+    startup_name: str
+    domain: str | None = None
+    description: str | None = None

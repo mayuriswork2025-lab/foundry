@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..auth.auth import CurrentUser, get_current_user
 from ...db.client import get_db
 from . import controller
-from .models import Startup
+from .models import Startup, StartupCreate
 
 router = APIRouter(prefix="/api/startups", tags=["startups"])
 
@@ -19,3 +19,12 @@ def list_startups(
     db: Session = Depends(get_db),
 ):
     return controller.list_startups(db, user)
+
+
+@router.post("", response_model=Startup)
+def create_startup(
+    payload: StartupCreate,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return controller.create_startup(db, user, payload)

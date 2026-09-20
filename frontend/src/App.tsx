@@ -1,27 +1,18 @@
-import { Header } from "@/components/header"
-import { HeroSection } from "@/components/hero-section"
-import { StatsSection } from "@/components/stats-section"
-import { ServicesSection } from "@/components/services-section"
-import { FeaturesSection } from "@/components/features-section"
-import { PricingSection } from "@/components/pricing-section"
-import { TestimonialsSection } from "@/components/testimonials-section"
-import { FAQSection } from "@/components/faq-section"
-import { CTASection } from "@/components/cta-section"
-import { Footer } from "@/components/footer"
+import { Route, Routes } from "react-router-dom"
+import { LandingPage } from "@/pages/LandingPage"
+import { LoginPage } from "@/pages/LoginPage"
+import { MentorWelcomePage } from "@/pages/MentorWelcomePage"
+import { NewStartupPage } from "@/pages/NewStartupPage"
+import { SignupPage } from "@/pages/SignupPage"
 
 export default function App() {
   return (
-    <main className="min-h-screen bg-background">
-      <Header />
-      <HeroSection />
-      <StatsSection />
-      <ServicesSection />
-      <FeaturesSection />
-      <CTASection />
-      <PricingSection />
-      <TestimonialsSection />
-      <FAQSection />
-      <Footer />
-    </main>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/startups/new" element={<NewStartupPage />} />
+      <Route path="/mentor" element={<MentorWelcomePage />} />
+    </Routes>
   )
 }

@@ -1,6 +1,7 @@
 import type React from "react"
 import { useState } from "react"
 import { Menu, X, ArrowUpRight, ArrowRight } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -107,8 +108,25 @@ export function Header() {
             </a>
           </nav>
 
-          <div className="hidden md:flex items-center gap-1">
-            <button
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/login"
+              className={`text-sm transition-colors ${
+                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Log in
+            </Link>
+            <Link
+              to="/signup?role=mentor"
+              className={`text-sm transition-colors ${
+                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Guide an idea
+            </Link>
+            <Link
+              to="/signup?role=founder"
               className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 transition-all duration-300 group overflow-hidden ${
                 isScrolled ? "border-zinc-300" : "border-border"
               }`}
@@ -137,7 +155,7 @@ export function Header() {
                   }`}
                 />
               </span>
-            </button>
+            </Link>
           </div>
 
           <button
@@ -202,10 +220,19 @@ export function Header() {
             <div
               className={`flex flex-col gap-3 mt-4 pt-4 border-t ${isScrolled ? "border-zinc-200" : "border-border"}`}
             >
-              <a href="#" className={isScrolled ? "text-black" : "text-foreground"}>
-                Login
-              </a>
-              <button
+              <Link to="/login" className={isScrolled ? "text-black" : "text-foreground"} onClick={() => setIsOpen(false)}>
+                Log in
+              </Link>
+              <Link
+                to="/signup?role=mentor"
+                className={isScrolled ? "text-black" : "text-foreground"}
+                onClick={() => setIsOpen(false)}
+              >
+                Guide an idea
+              </Link>
+              <Link
+                to="/signup?role=founder"
+                onClick={() => setIsOpen(false)}
                 className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 w-fit transition-all duration-300 group overflow-hidden ${
                   isScrolled ? "border-zinc-300" : "border-border"
                 }`}
@@ -234,7 +261,7 @@ export function Header() {
                     }`}
                   />
                 </span>
-              </button>
+              </Link>
             </div>
           </nav>
         )}

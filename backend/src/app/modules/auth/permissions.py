@@ -96,3 +96,14 @@ def require_admin_or_startup_member(
     if is_admin(db, user.id) or is_startup_member(db, user.id, startup_id):
         return user
     raise HTTPException(status_code=403, detail="Not a member of this startup.")
+
+
+def require_admin_or_startup_founder(
+    startup_id: int,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CurrentUser:
+    """FastAPI dependency: 403s unless the caller is an Admin or the founder of this startup."""
+    if is_admin(db, user.id) or is_startup_founder(db, user.id, startup_id):
+        return user
+    raise HTTPException(status_code=403, detail="Only the founder or an admin can do this.")

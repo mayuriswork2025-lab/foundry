@@ -6,4 +6,4 @@ cd "$(dirname "$0")"
 
 PORT=8000
 
-exec uv run --env-file .env python -m uvicorn app.main:app --app-dir src --reload --port "$PORT"
+exec uv run --env-file .env python -m uvicorn app.main:app --app-dir src --reload --port 8000

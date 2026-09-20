@@ -1,4 +1,5 @@
 import { Header } from "@/components/header"
+import { StartupsDashboard } from "@/components/startups-dashboard"
 import { HeroSection } from "@/components/hero-section"
 import { StatsSection } from "@/components/stats-section"
 import { ServicesSection } from "@/components/services-section"
@@ -13,6 +14,7 @@ export default function App() {
   return (
     <main className="min-h-screen bg-background">
       <Header />
+      <StartupsDashboard />
       <HeroSection />
       <StatsSection />
       <ServicesSection />

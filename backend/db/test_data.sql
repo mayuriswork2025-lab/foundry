@@ -38,3 +38,16 @@ select s.*
 from startups s
 join startup_memberships sm on sm.startup_id = s.startup_id
 where sm.user_id = :founder_id;
+
+-- Milestones, uneven on purpose (EcoTrack gets more than FinFlow) so
+-- GET /api/startups/insights/above-average-milestones has something to show.
+insert into milestones (startup_id, milestone_name, status, due_date)
+select startup_id, name, status, due_date
+from startups, (values
+    ('EcoTrack', 'Landing page live',        'completed',   current_date - 30),
+    ('EcoTrack', 'First 10 paying customers', 'completed',  current_date - 10),
+    ('EcoTrack', 'Seed round closed',         'in_progress', current_date + 20),
+    ('FinFlow',  'Landing page live',         'pending',     current_date + 5)
+) as seed(startup_name, name, status, due_date)
+where startups.startup_name = seed.startup_name
+on conflict (startup_id, milestone_name) do nothing;

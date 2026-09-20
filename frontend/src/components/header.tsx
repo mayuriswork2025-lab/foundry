@@ -109,37 +109,6 @@ export function Header() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link
-              to="/auth?role=mentor"
-              className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 transition-all duration-300 group overflow-hidden ${
-                isScrolled ? "border-zinc-300" : "border-border"
-              }`}
-            >
-              <span
-                className={`absolute inset-0 rounded-full scale-x-0 origin-right group-hover:scale-x-100 transition-transform duration-300 ${
-                  isScrolled ? "bg-zinc-100" : "bg-accent"
-                }`}
-              />
-              <span
-                className={`text-sm pr-3 relative z-10 transition-colors duration-300 ${
-                  isScrolled ? "text-black" : "text-foreground"
-                }`}
-              >
-                Guide an idea
-              </span>
-              <span className="w-8 h-8 rounded-full flex items-center justify-center relative z-10">
-                <ArrowRight
-                  className={`w-4 h-4 group-hover:opacity-0 absolute transition-opacity duration-300 ${
-                    isScrolled ? "text-black" : "text-foreground"
-                  }`}
-                />
-                <ArrowUpRight
-                  className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 ${
-                    isScrolled ? "text-black" : "text-foreground"
-                  }`}
-                />
-              </span>
-            </Link>
-            <Link
               to="/auth?role=founder"
               className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 transition-all duration-300 group overflow-hidden ${
                 isScrolled ? "border-zinc-300" : "border-border"
@@ -234,38 +203,6 @@ export function Header() {
             <div
               className={`flex flex-col gap-3 mt-4 pt-4 border-t ${isScrolled ? "border-zinc-200" : "border-border"}`}
             >
-              <Link
-                to="/auth?role=mentor"
-                onClick={() => setIsOpen(false)}
-                className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 w-fit transition-all duration-300 group overflow-hidden ${
-                  isScrolled ? "border-zinc-300" : "border-border"
-                }`}
-              >
-                <span
-                  className={`absolute inset-0 rounded-full scale-x-0 origin-right group-hover:scale-x-100 transition-transform duration-300 ${
-                    isScrolled ? "bg-zinc-100" : "bg-accent"
-                  }`}
-                />
-                <span
-                  className={`text-sm pr-3 relative z-10 transition-colors duration-300 ${
-                    isScrolled ? "text-black" : "text-foreground"
-                  }`}
-                >
-                  Guide an idea
-                </span>
-                <span className="w-8 h-8 rounded-full flex items-center justify-center relative z-10">
-                  <ArrowRight
-                    className={`w-4 h-4 group-hover:opacity-0 absolute transition-opacity duration-300 ${
-                      isScrolled ? "text-black" : "text-foreground"
-                    }`}
-                  />
-                  <ArrowUpRight
-                    className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 ${
-                      isScrolled ? "text-black" : "text-foreground"
-                    }`}
-                  />
-                </span>
-              </Link>
               <Link
                 to="/auth?role=founder"
                 onClick={() => setIsOpen(false)}

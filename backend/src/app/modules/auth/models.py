@@ -13,10 +13,17 @@ SelfSelectableRole = Literal["founder", "mentor"]
 
 
 class SignupRequest(ApiModel):
+    email: str
+    password: str
     first_name: str
     last_name: str
     role: SelfSelectableRole
     department: str | None = None
+
+
+class LoginRequest(ApiModel):
+    email: str
+    password: str
 
 
 class UserProfile(ApiModel):
@@ -26,3 +33,8 @@ class UserProfile(ApiModel):
     email: str
     role_name: str
     status: str
+
+
+class AuthResponse(ApiModel):
+    access_token: str
+    user: UserProfile

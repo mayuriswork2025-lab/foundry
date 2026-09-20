@@ -9,7 +9,7 @@ demo day evaluations within a startup incubator program, backed by a
 | Layer      | Choice                                                     |
 | ---------- | ------------------------------------------------------------ |
 | Database   | Supabase Postgres, used as vanilla Postgres (no PostgREST/RLS/supabase-py) |
-| Auth       | Supabase Auth issues the JWT; the backend verifies it locally (PyJWT), no network call back to Supabase |
+| Auth       | Self-rolled: backend hashes passwords (bcrypt) and issues/verifies its own JWTs (PyJWT), no external auth provider |
 | Migrations | Hand-written SQL, managed by the Supabase CLI               |
 | Backend    | Python + FastAPI, managed with [uv](https://docs.astral.sh/uv/) |
 | Frontend   | React + Vite + TypeScript, managed with pnpm                |
@@ -146,8 +146,8 @@ status-transition rules, role checks such as "the assigned mentor must have syst
 Mentor," "no evaluations after the demo day has passed," and signing up a new user's profile
 row) lives in the API layer:
 
-- `backend/src/app/modules/auth/auth.py` — verifies the caller's JWT locally (PyJWT + the
-  token issuer's signing secret, no network call back to it) and returns the current user.
+- `backend/src/app/modules/auth/auth.py` — hashes/verifies passwords (bcrypt) and
+  mints/verifies this backend's own JWTs (PyJWT); no external auth provider involved.
 - `backend/src/app/modules/auth/permissions.py` — role/membership checks (`is_admin`,
   `is_startup_member`, `is_startup_founder`, `require_role`,
   `require_admin_or_startup_member`) that other modules' routes compose to decide what a

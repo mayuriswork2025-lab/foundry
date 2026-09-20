@@ -1,7 +1,5 @@
-import type { Session } from "@supabase/supabase-js"
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { apiFetch } from "@/lib/api"
-import { supabase } from "@/lib/supabaseClient"
+import { apiFetch, clearToken, getToken, setToken } from "@/lib/api"
 
 export interface UserProfile {
   userId: string
@@ -12,60 +10,73 @@ export interface UserProfile {
   status: string
 }
 
+interface AuthResponse {
+  accessToken: string
+  user: UserProfile
+}
+
+export interface SignupPayload {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  role: "founder" | "mentor"
+  department?: string
+}
+
 interface AuthContextValue {
-  session: Session | null
   profile: UserProfile | null
   loading: boolean
-  refreshProfile: () => Promise<void>
-  signOut: () => Promise<void>
+  signup: (payload: SignupPayload) => Promise<UserProfile>
+  login: (email: string, password: string) => Promise<UserProfile>
+  signOut: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchProfile = async () => {
-    try {
-      const data = await apiFetch<UserProfile>("/api/auth/me")
-      setProfile(data)
-    } catch {
-      // No profile yet (e.g. mid-signup, before completeSignup() runs) — not an error.
-      setProfile(null)
-    }
-  }
-
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session)
-      if (data.session) await fetchProfile()
+    const token = getToken()
+    if (!token) {
       setLoading(false)
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setSession(newSession)
-      if (newSession) {
-        await fetchProfile()
-      } else {
-        setProfile(null)
-      }
-    })
-
-    return () => listener.subscription.unsubscribe()
+      return
+    }
+    apiFetch<UserProfile>("/api/auth/me")
+      .then(setProfile)
+      .catch(() => clearToken())
+      .finally(() => setLoading(false))
   }, [])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    setSession(null)
+  const signup = async (payload: SignupPayload) => {
+    const data = await apiFetch<AuthResponse>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+    setToken(data.accessToken)
+    setProfile(data.user)
+    return data.user
+  }
+
+  const login = async (email: string, password: string) => {
+    const data = await apiFetch<AuthResponse>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    })
+    setToken(data.accessToken)
+    setProfile(data.user)
+    return data.user
+  }
+
+  const signOut = () => {
+    clearToken()
     setProfile(null)
   }
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, refreshProfile: fetchProfile, signOut }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ profile, loading, signup, login, signOut }}>{children}</AuthContext.Provider>
   )
 }
 

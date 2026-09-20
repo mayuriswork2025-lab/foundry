@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/AuthContext"
-import { apiFetch } from "@/lib/api"
-import { supabase } from "@/lib/supabaseClient"
+import { ApiError } from "@/lib/api"
 
 export function LoginPage() {
   const [email, setEmail] = useState("")
@@ -15,7 +14,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
-  const { refreshProfile } = useAuth()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -23,14 +22,10 @@ export function LoginPage() {
     setLoading(true)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      if (signInError) throw signInError
-
-      await refreshProfile()
-      const profile = await apiFetch<{ roleName: string }>("/api/auth/me")
+      const profile = await login(email, password)
       navigate(profile.roleName === "mentor" ? "/mentor" : "/startups/new")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.")
+      setError(err instanceof ApiError ? err.message : "Something went wrong.")
     } finally {
       setLoading(false)
     }

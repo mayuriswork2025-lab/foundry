@@ -8,18 +8,19 @@ from sqlalchemy.orm import Session
 from ...db.client import get_db
 from . import controller
 from .auth import CurrentUser, get_current_user
-from .models import SignupRequest, UserProfile
+from .models import AuthResponse, LoginRequest, SignupRequest, UserProfile
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/signup", response_model=UserProfile)
-def signup(
-    payload: SignupRequest,
-    user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    return controller.complete_signup(db, user, payload)
+@router.post("/signup", response_model=AuthResponse)
+def signup(payload: SignupRequest, db: Session = Depends(get_db)):
+    return controller.signup(db, payload)
+
+
+@router.post("/login", response_model=AuthResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    return controller.login(db, payload)
 
 
 @router.get("/me", response_model=UserProfile)

@@ -59,7 +59,11 @@ class User(Base):
         CheckConstraint("length(trim(last_name)) > 0", name="user_last_name_not_blank"),
     )
 
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    # No longer FKs to auth.users — this backend owns credentials directly
+    # (see modules/auth/), Supabase is purely the Postgres database.
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.role_id"), nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -68,6 +72,7 @@ class User(Base):
     department: Mapped[str | None] = mapped_column(String(100))
     registration_date: Mapped[datetime.date | None] = mapped_column(Date)
     status: Mapped[str | None] = mapped_column(String(20))
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
 
 
 class Startup(Base):

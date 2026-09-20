@@ -64,14 +64,18 @@ your code. Forcing it through `python -m` avoids that — `dev.sh` already does 
 
 ## Auth
 
-Supabase is used purely as Postgres + an auth token issuer here — no `supabase-py`, no
-PostgREST/REST API, no network call back to Supabase on each request.
-`src/app/modules/auth/auth.py` verifies the caller's JWT locally with `PyJWT`, using the
-token issuer's signing secret (`JWT_SECRET` — Supabase's is under Project Settings → API →
-JWT Settings in the dashboard).
+This backend owns authentication outright — no external auth provider, no `supabase-py`.
+Supabase (if that's what `DATABASE_URL` points at) is purely the Postgres database here.
 
-Trade-off: a session Supabase itself has revoked (sign-out, ban) still passes here until the
-JWT's own expiry, since nothing checks back with Supabase's Auth API.
+`src/app/modules/auth/auth.py`:
+- `hash_password()`/`verify_password()` — bcrypt, via `POST /api/auth/signup` and
+  `POST /api/auth/login`.
+- `create_access_token()` — mints a JWT (HS256, `JWT_SECRET`) on successful signup/login.
+- `get_current_user()` — verifies that JWT locally on every subsequent request. No network
+  call anywhere in this chain.
+
+`users.password_hash` is required and `users.user_id` has no foreign key to anything
+Supabase-managed — it's a plain `gen_random_uuid()` this backend generates itself.
 
 ## db/
 

@@ -33,6 +33,11 @@ def main() -> None:
     if not connection_string:
         raise RuntimeError("DATABASE_URL is not set. Copy .env.example to .env and fill it in.")
 
+    # DATABASE_URL is SQLAlchemy-style (postgresql+psycopg://...) so the rest
+    # of the app picks the psycopg3 driver; raw psycopg.connect() doesn't
+    # understand the "+psycopg" driver suffix, so strip it here.
+    connection_string = connection_string.replace("postgresql+psycopg://", "postgresql://")
+
     if not MIGRATIONS_DIR.is_dir():
         raise RuntimeError(f"Migrations directory not found: {MIGRATIONS_DIR}")
 

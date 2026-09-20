@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/AuthContext"
-import { apiFetch } from "@/lib/api"
-import { supabase } from "@/lib/supabaseClient"
+import { ApiError } from "@/lib/api"
 
 type Role = "founder" | "mentor"
 
@@ -26,7 +25,7 @@ export function SignupPage() {
   const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
-  const { refreshProfile } = useAuth()
+  const { signup } = useAuth()
 
   const roleLabel = role === "founder" ? "Founder" : "Mentor"
 
@@ -36,24 +35,10 @@ export function SignupPage() {
     setLoading(true)
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-      if (signUpError) throw signUpError
-      if (!data.session) {
-        // Email confirmation is required before a session exists.
-        setError("Check your email to confirm your account, then log in.")
-        setLoading(false)
-        return
-      }
-
-      await apiFetch("/api/auth/signup", {
-        method: "POST",
-        body: JSON.stringify({ first_name: firstName, last_name: lastName, role }),
-      })
-      await refreshProfile()
-
+      await signup({ email, password, firstName, lastName, role })
       navigate(role === "founder" ? "/startups/new" : "/mentor")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.")
+      setError(err instanceof ApiError ? err.message : "Something went wrong.")
     } finally {
       setLoading(false)
     }

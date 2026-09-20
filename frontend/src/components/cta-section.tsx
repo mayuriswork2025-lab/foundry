@@ -22,7 +22,7 @@ export function CTASection() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/signup?role=founder"
+              to="/auth?role=founder"
               className="relative flex items-center justify-center gap-0 bg-foreground text-background rounded-full pl-6 pr-1.5 py-1.5 transition-all duration-300 group overflow-hidden"
             >
               <span className="text-sm pr-4">Submit your idea</span>
@@ -32,7 +32,7 @@ export function CTASection() {
             </Link>
 
             <Link
-              to="/signup?role=mentor"
+              to="/auth?role=mentor"
               className="relative flex items-center justify-center gap-0 border border-border rounded-full pl-6 pr-1.5 py-1.5 transition-all duration-300 group overflow-hidden"
             >
               <span className="absolute inset-0 bg-foreground rounded-full scale-x-0 origin-right group-hover:scale-x-100 transition-transform duration-300" />

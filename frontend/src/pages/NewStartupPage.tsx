@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
+import { Layout } from "@/components/Layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -36,57 +37,69 @@ export function NewStartupPage() {
     }
   }
 
-  if (authLoading) return null
-
-  if (!profile) {
-    return (
-      <main className="min-h-screen flex items-center justify-center px-6 py-24 bg-background text-center">
-        <p className="text-muted-foreground">You need to be signed in as a founder to submit an idea.</p>
-      </main>
-    )
-  }
-
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-24 bg-background">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle className="font-serif text-3xl">Submit your idea</CardTitle>
-          <CardDescription>Tell us what you're building, {profile.firstName}.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="startupName">Startup name</Label>
-              <Input id="startupName" value={startupName} onChange={(e) => setStartupName(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="domain">Domain</Label>
-              <Input
-                id="domain"
-                placeholder="e.g. CleanTech, FinTech, HealthTech"
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                rows={5}
-                placeholder="What problem are you solving?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
+    <Layout>
+      <main className="relative min-h-screen flex items-center justify-center px-6 py-32 overflow-hidden">
+        {/* Same wildflower-valley imagery as the landing page footer, for continuity */}
+        <img
+          src="/images/footer-bg.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+        {authLoading ? null : !profile ? (
+          <p className="relative z-10 text-muted-foreground">
+            You need to be signed in as a founder to submit an idea.
+          </p>
+        ) : (
+          <Card className="relative z-10 w-full max-w-lg">
+            <CardHeader>
+              <CardTitle className="font-serif text-3xl">Submit your idea</CardTitle>
+              <CardDescription>Tell us what you're building, {profile.firstName}.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startupName">Startup name</Label>
+                  <Input
+                    id="startupName"
+                    value={startupName}
+                    onChange={(e) => setStartupName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="domain">Domain</Label>
+                  <Input
+                    id="domain"
+                    placeholder="e.g. CleanTech, FinTech, HealthTech"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    rows={5}
+                    placeholder="What problem are you solving?"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
 
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit idea"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </main>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? "Submitting..." : "Submit idea"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+      </main>
+    </Layout>
   )
 }

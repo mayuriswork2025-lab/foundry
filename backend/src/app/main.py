@@ -10,7 +10,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .modules.auth.router import router as auth_router
+from .modules.mentoring.router import router as mentoring_router
+from .modules.milestones.router import notifications_router as milestone_notifications_router
+from .modules.milestones.router import router as milestones_router
 from .modules.startups.router import router as startups_router
+from .modules.users.router import router as users_router
 
 app = FastAPI()
 
@@ -28,4 +32,8 @@ def hello():
 
 
 app.include_router(auth_router)
+app.include_router(mentoring_router)
+app.include_router(milestones_router)
+app.include_router(milestone_notifications_router)
 app.include_router(startups_router)
+app.include_router(users_router)

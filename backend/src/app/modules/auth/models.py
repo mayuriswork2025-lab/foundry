@@ -18,6 +18,7 @@ class SignupRequest(ApiModel):
     first_name: str
     last_name: str
     role: SelfSelectableRole
+    phone: str | None = None
     department: str | None = None
 
 

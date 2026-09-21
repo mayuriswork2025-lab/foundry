@@ -6,8 +6,11 @@ data access), and router.py (thin route -> controller mapping) — mounted
 here, not defined here.
 """
 
-from fastapi import Depends, FastAPI, HTTPException
+import logging
+
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -19,6 +22,8 @@ from .modules.milestones.router import router as milestones_router
 from .modules.startups.router import router as startups_router
 from .modules.users.router import router as users_router
 
+logger = logging.getLogger("app")
+
 app = FastAPI()
 
 app.add_middleware(
@@ -27,6 +32,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """
+    Catches anything a controller didn't deliberately raise as an
+    HTTPException (those still get FastAPI's own handler, untouched here) —
+    a DB error, a bug, whatever — and turns it into a clean 500 instead of
+    a leaked traceback or an unhandled crash.
+    """
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
 
 @app.get("/api/health")

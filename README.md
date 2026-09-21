@@ -93,7 +93,7 @@ tooling. `backend/` needs only `uv`; `frontend/` needs only `pnpm`.
    pnpm dev
    ```
 
-   - Backend: http://localhost:8000/api/hello (interactive docs at `/docs`)
+   - Backend: http://localhost:8000/api/health (interactive docs at `/docs`)
    - Frontend: http://localhost:3000
 
 ## Database migrations

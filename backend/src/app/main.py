@@ -6,9 +6,12 @@ data access), and router.py (thin route -> controller mapping) — mounted
 here, not defined here.
 """
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
+from .db.client import get_db
 from .modules.auth.router import router as auth_router
 from .modules.mentoring.router import router as mentoring_router
 from .modules.milestones.router import notifications_router as milestone_notifications_router
@@ -26,9 +29,14 @@ app.add_middleware(
 )
 
 
-@app.get("/api/hello")
-def hello():
-    return {"message": "Hello, world!"}
+@app.get("/api/health")
+def health(db: Session = Depends(get_db)):
+    """Used by uptime monitors/deploy platforms — 503s if the DB is unreachable."""
+    try:
+        db.execute(text("select 1"))
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Database unreachable") from exc
+    return {"status": "ok"}
 
 
 app.include_router(auth_router)

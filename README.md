@@ -4,6 +4,15 @@ A full-stack application for managing startups, mentors, funding requests, miles
 demo day evaluations within a startup incubator program, backed by a
 [Supabase](https://supabase.com) (Postgres) database.
 
+## Deployment
+
+### Frontend
+[https://foundry-neon-iota.vercel.app](https://foundry-neon-iota.vercel.app)
+
+### Backend
+ - Health Check: [https://foundry-indol-beta.vercel.app/api/health](https://foundry-indol-beta.vercel.app/api/health)
+ - Docs: [https://foundry-indol-beta.vercel.app/docs](https://foundry-indol-beta.vercel.app/docs)
+
 ## Tech stack
 
 | Layer      | Choice                                                     |

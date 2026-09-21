@@ -37,12 +37,13 @@ def is_admin(db: Session, user_id: str) -> bool:
 
 
 def is_startup_member(db: Session, user_id: str, startup_id: int) -> bool:
+    """An accepted member only — a pending 'invited' row doesn't count."""
     row = db.execute(
         text(
             """
             select membership_id
             from startup_memberships
-            where user_id = :user_id and startup_id = :startup_id
+            where user_id = :user_id and startup_id = :startup_id and status = 'accepted'
             """
         ),
         {"user_id": user_id, "startup_id": startup_id},
@@ -59,6 +60,24 @@ def is_startup_founder(db: Session, user_id: str, startup_id: int) -> bool:
             where user_id = :user_id
               and startup_id = :startup_id
               and project_role = 'founder'
+              and status = 'accepted'
+            """
+        ),
+        {"user_id": user_id, "startup_id": startup_id},
+    ).first()
+    return row is not None
+
+
+def is_startup_mentor(db: Session, user_id: str, startup_id: int) -> bool:
+    row = db.execute(
+        text(
+            """
+            select membership_id
+            from startup_memberships
+            where user_id = :user_id
+              and startup_id = :startup_id
+              and project_role = 'mentor'
+              and status = 'accepted'
             """
         ),
         {"user_id": user_id, "startup_id": startup_id},
@@ -81,18 +100,29 @@ def require_role(*roles: str):
     return dependency
 
 
+def _is_startup_submitted(db: Session, startup_id: int) -> bool:
+    row = db.execute(
+        text("select 1 from startups where startup_id = :startup_id and registration_status != 'draft'"),
+        {"startup_id": startup_id},
+    ).first()
+    return row is not None
+
+
 def require_admin_or_startup_member(
     startup_id: int,
     user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> CurrentUser:
     """
-    FastAPI dependency: 403s unless the caller is an Admin or a member of the
-    startup identified by the `startup_id` path parameter. Mirrors the old
-    "Founder access to own startup" / "Membership visible to startup members" /
-    "Milestone access" RLS policies, which despite the name only required
-    membership, not specifically Founder.
+    FastAPI dependency: 403s unless the caller is an Admin, a member of the
+    startup identified by the `startup_id` path parameter, or a mentor
+    browsing a startup that's been submitted (not a private draft). Mirrors
+    the old "Founder access to own startup" / "Membership visible to startup
+    members" / "Milestone access" RLS policies, extended so mentors can
+    browse team info on anything founders have actually submitted.
     """
     if is_admin(db, user.id) or is_startup_member(db, user.id, startup_id):
+        return user
+    if get_current_user_role(db, user.id) == "mentor" and _is_startup_submitted(db, startup_id):
         return user
     raise HTTPException(status_code=403, detail="Not a member of this startup.")

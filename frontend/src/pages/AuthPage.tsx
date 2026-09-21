@@ -1,13 +1,26 @@
-import { useState, type FormEvent } from "react"
+import { useState, type ChangeEvent, type ComponentProps, type FormEvent } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Layout } from "@/components/Layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/context/AuthContext"
 import { ApiError } from "@/lib/api"
+import { cn } from "@/lib/utils"
+
+const MAJORS = [
+  "Computer Science",
+  "Business Administration",
+  "Engineering",
+  "Design",
+  "Marketing",
+  "Economics",
+  "Biology",
+  "Other",
+]
 
 type Role = "founder" | "mentor"
 type Mode = "signup" | "login"
@@ -18,6 +31,41 @@ function isRole(value: string | null): value is Role {
 
 function isMode(value: string | null): value is Mode {
   return value === "signup" || value === "login"
+}
+
+function PasswordInput({
+  id,
+  value,
+  onChange,
+  className,
+  ...props
+}: {
+  id: string
+  value: string
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void
+} & Omit<ComponentProps<typeof Input>, "id" | "value" | "onChange" | "type">) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={onChange}
+        className={cn("pr-10", className)}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground cursor-pointer"
+      >
+        {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  )
 }
 
 export function AuthPage() {
@@ -51,7 +99,7 @@ export function AuthPage() {
 
         <Card className="relative z-10 w-full max-w-md">
           <CardHeader>
-            <CardTitle className="font-serif text-3xl">Welcome to Foundry</CardTitle>
+            <CardTitle className="font-serif text-3xl">{mode === "signup" ? "Join Foundry" : "Welcome back"}</CardTitle>
             <CardDescription>
               {mode === "signup"
                 ? role === "founder"
@@ -61,13 +109,8 @@ export function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signup">Sign up</TabsTrigger>
-                <TabsTrigger value="login">Log in</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="signup">
+            {mode === "signup" ? (
+              <>
                 <div className="mb-6 grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -85,12 +128,36 @@ export function AuthPage() {
                   </Button>
                 </div>
                 <SignupForm role={role} />
-              </TabsContent>
+              </>
+            ) : (
+              <LoginForm />
+            )}
 
-              <TabsContent value="login">
-                <LoginForm />
-              </TabsContent>
-            </Tabs>
+            <p className="text-sm text-muted-foreground text-center mt-6">
+              {mode === "signup" ? (
+                <>
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("login")}
+                    className="text-foreground underline underline-offset-4 cursor-pointer"
+                  >
+                    Log in
+                  </button>
+                </>
+              ) : (
+                <>
+                  New to Foundry?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("signup")}
+                    className="text-foreground underline underline-offset-4 cursor-pointer"
+                  >
+                    Sign up
+                  </button>
+                </>
+              )}
+            </p>
           </CardContent>
         </Card>
       </main>
@@ -102,6 +169,8 @@ function SignupForm({ role }: { role: Role }) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [major, setMajor] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -115,8 +184,16 @@ function SignupForm({ role }: { role: Role }) {
     setLoading(true)
 
     try {
-      await signup({ email, password, firstName, lastName, role })
-      navigate(role === "founder" ? "/startups/new" : "/mentor")
+      await signup({
+        email,
+        password,
+        firstName,
+        lastName,
+        role,
+        phone: phone || undefined,
+        department: major || undefined,
+      })
+      navigate("/dashboard")
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.")
     } finally {
@@ -140,11 +217,31 @@ function SignupForm({ role }: { role: Role }) {
         <Label htmlFor="signupEmail">Email</Label>
         <Input id="signupEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone (optional)</Label>
+          <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="major">Major (optional)</Label>
+          <Select value={major} onValueChange={setMajor}>
+            <SelectTrigger id="major" className="w-full">
+              <SelectValue placeholder="Select a major" />
+            </SelectTrigger>
+            <SelectContent>
+              {MAJORS.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="signupPassword">Password</Label>
-        <Input
+        <PasswordInput
           id="signupPassword"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           minLength={6}
@@ -176,8 +273,8 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const profile = await login(email, password)
-      navigate(profile.roleName === "mentor" ? "/mentor" : "/startups/new")
+      await login(email, password)
+      navigate("/dashboard")
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.")
     } finally {
@@ -193,9 +290,8 @@ function LoginForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="loginPassword">Password</Label>
-        <Input
+        <PasswordInput
           id="loginPassword"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required

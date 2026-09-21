@@ -37,8 +37,8 @@ def signup(db: Session, payload: SignupRequest) -> AuthResponse:
     row = db.execute(
         text(
             """
-            insert into users (role_id, first_name, last_name, email, department, password_hash)
-            values (:role_id, :first_name, :last_name, :email, :department, :password_hash)
+            insert into users (role_id, first_name, last_name, email, phone, department, password_hash)
+            values (:role_id, :first_name, :last_name, :email, :phone, :department, :password_hash)
             returning user_id, first_name, last_name, email, status
             """
         ),
@@ -47,6 +47,9 @@ def signup(db: Session, payload: SignupRequest) -> AuthResponse:
             "first_name": payload.first_name,
             "last_name": payload.last_name,
             "email": payload.email,
+            # phone is UNIQUE in the DB — normalize blank to NULL so multiple
+            # signups without a phone number don't collide on "".
+            "phone": payload.phone or None,
             "department": payload.department,
             "password_hash": hash_password(payload.password),
         },

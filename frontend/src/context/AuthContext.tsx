@@ -21,6 +21,7 @@ export interface SignupPayload {
   firstName: string
   lastName: string
   role: "founder" | "mentor"
+  phone?: string
   department?: string
 }
 

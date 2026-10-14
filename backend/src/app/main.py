@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 
 from .db.client import get_db
 from .modules.auth.router import router as auth_router
+from .modules.demo_day.router import router as demo_day_router
+from .modules.demo_day.router import startup_router as demo_day_startup_router
+from .modules.meetings.router import router as meetings_router
 from .modules.mentoring.router import router as mentoring_router
 from .modules.milestones.router import notifications_router as milestone_notifications_router
 from .modules.milestones.router import router as milestones_router
@@ -57,6 +60,9 @@ def health(db: Session = Depends(get_db)):
 
 
 app.include_router(auth_router)
+app.include_router(demo_day_router)
+app.include_router(demo_day_startup_router)
+app.include_router(meetings_router)
 app.include_router(mentoring_router)
 app.include_router(milestones_router)
 app.include_router(milestone_notifications_router)

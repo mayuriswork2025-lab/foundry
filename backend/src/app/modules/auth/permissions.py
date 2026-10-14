@@ -85,6 +85,24 @@ def is_startup_mentor(db: Session, user_id: str, startup_id: int) -> bool:
     return row is not None
 
 
+def is_startup_mentee(db: Session, user_id: str, startup_id: int) -> bool:
+    """An accepted member who isn't the mentor — founder or teammate."""
+    row = db.execute(
+        text(
+            """
+            select membership_id
+            from startup_memberships
+            where user_id = :user_id
+              and startup_id = :startup_id
+              and project_role != 'mentor'
+              and status = 'accepted'
+            """
+        ),
+        {"user_id": user_id, "startup_id": startup_id},
+    ).first()
+    return row is not None
+
+
 def require_role(*roles: str):
     """FastAPI dependency factory: 403s unless the caller's system role is one of `roles`."""
 

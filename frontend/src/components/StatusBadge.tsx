@@ -11,6 +11,8 @@ const STATUS_STYLES: Record<string, string> = {
   completed: "bg-emerald-100 text-emerald-800 border-transparent",
   unverified: "bg-amber-100 text-amber-800 border-transparent",
   verified: "bg-emerald-100 text-emerald-800 border-transparent",
+  scheduled: "bg-blue-100 text-blue-800 border-transparent",
+  cancelled: "bg-muted text-muted-foreground border-transparent",
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -24,6 +26,8 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
   unverified: "Needs verification",
   verified: "Verified",
+  scheduled: "Scheduled",
+  cancelled: "Cancelled",
 }
 
 export function StatusBadge({ status }: { status: string | null }) {

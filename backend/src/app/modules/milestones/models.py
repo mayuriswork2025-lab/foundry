@@ -12,16 +12,24 @@ class Milestone(ApiModel):
     milestone_id: int
     startup_id: int
     milestone_name: str
+    description: str | None
     due_date: datetime.date | None
     completion_date: datetime.date | None
     status: str | None
     verification_status: str | None
     mentor_remarks: str | None
+    meeting_requested_at: datetime.datetime | None
 
 
 class MilestoneCreate(ApiModel):
     milestone_name: str
+    description: str | None = None
     due_date: datetime.date | None = None
+
+
+class MilestoneDetailsUpdate(ApiModel):
+    milestone_name: str
+    description: str | None = None
 
 
 class MilestoneStatusUpdate(ApiModel):

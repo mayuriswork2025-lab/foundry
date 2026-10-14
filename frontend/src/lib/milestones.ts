@@ -4,20 +4,36 @@ export interface Milestone {
   milestoneId: number
   startupId: number
   milestoneName: string
+  description: string | null
   dueDate: string | null
   completionDate: string | null
   status: "pending" | "in_progress" | "completed" | null
   verificationStatus: "unverified" | "verified" | "rejected" | null
   mentorRemarks: string | null
+  meetingRequestedAt: string | null
 }
 
 export function listMilestones(startupId: number) {
   return apiFetch<Milestone[]>(`/api/startups/${startupId}/milestones`)
 }
 
-export function createMilestone(startupId: number, payload: { milestoneName: string; dueDate?: string | null }) {
+export function createMilestone(
+  startupId: number,
+  payload: { milestoneName: string; description?: string | null; dueDate?: string | null },
+) {
   return apiFetch<Milestone>(`/api/startups/${startupId}/milestones`, {
     method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateMilestoneDetails(
+  startupId: number,
+  milestoneId: number,
+  payload: { milestoneName: string; description?: string | null },
+) {
+  return apiFetch<Milestone>(`/api/startups/${startupId}/milestones/${milestoneId}/details`, {
+    method: "PATCH",
     body: JSON.stringify(payload),
   })
 }
@@ -42,6 +58,12 @@ export function verifyMilestone(
 
 export function reopenMilestone(startupId: number, milestoneId: number) {
   return apiFetch<Milestone>(`/api/startups/${startupId}/milestones/${milestoneId}/reopen`, { method: "PATCH" })
+}
+
+export function requestMeetingForMilestone(startupId: number, milestoneId: number) {
+  return apiFetch<Milestone>(`/api/startups/${startupId}/milestones/${milestoneId}/request-meeting`, {
+    method: "PATCH",
+  })
 }
 
 export interface MilestoneNotification extends Milestone {

@@ -12,7 +12,14 @@ from sqlalchemy.orm import Session
 
 from ..auth.auth import CurrentUser
 from ..auth.permissions import is_admin, is_startup_member, is_startup_mentor
-from .models import Milestone, MilestoneCreate, MilestoneNotification, MilestoneStatusUpdate, MilestoneVerification
+from .models import (
+    Milestone,
+    MilestoneCreate,
+    MilestoneDetailsUpdate,
+    MilestoneNotification,
+    MilestoneStatusUpdate,
+    MilestoneVerification,
+)
 
 
 def list_milestones(db: Session, startup_id: int) -> list[Milestone]:
@@ -40,15 +47,63 @@ def create_milestone(db: Session, user: CurrentUser, startup_id: int, payload: M
     row = db.execute(
         text(
             """
-            insert into milestones (startup_id, milestone_name, due_date)
-            values (:startup_id, :milestone_name, :due_date)
+            insert into milestones (startup_id, milestone_name, description, due_date)
+            values (:startup_id, :milestone_name, :description, :due_date)
             returning *
             """
         ),
-        {"startup_id": startup_id, "milestone_name": payload.milestone_name, "due_date": payload.due_date},
+        {
+            "startup_id": startup_id,
+            "milestone_name": payload.milestone_name,
+            "description": payload.description,
+            "due_date": payload.due_date,
+        },
     ).mappings().first()
     db.commit()
 
+    return Milestone.model_validate(dict(row))
+
+
+def update_milestone_details(
+    db: Session, user: CurrentUser, startup_id: int, milestone_id: int, payload: MilestoneDetailsUpdate
+) -> Milestone:
+    """Only this startup's mentor can rename a milestone or edit its description."""
+    if not (is_admin(db, user.id) or is_startup_mentor(db, user.id, startup_id)):
+        raise HTTPException(status_code=403, detail="Only this startup's mentor can edit this milestone.")
+
+    existing = db.execute(
+        text(
+            """
+            select 1 from milestones
+            where startup_id = :startup_id and milestone_name = :milestone_name and milestone_id != :milestone_id
+            """
+        ),
+        {"startup_id": startup_id, "milestone_name": payload.milestone_name, "milestone_id": milestone_id},
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="A milestone with this name already exists.")
+
+    row = db.execute(
+        text(
+            """
+            update milestones
+            set milestone_name = :milestone_name, description = :description
+            where milestone_id = :milestone_id and startup_id = :startup_id
+            returning *
+            """
+        ),
+        {
+            "milestone_name": payload.milestone_name,
+            "description": payload.description,
+            "milestone_id": milestone_id,
+            "startup_id": startup_id,
+        },
+    ).mappings().first()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="This milestone doesn't exist.")
+
+    db.commit()
     return Milestone.model_validate(dict(row))
 
 
@@ -147,13 +202,38 @@ def reopen_milestone(db: Session, user: CurrentUser, startup_id: int, milestone_
     return Milestone.model_validate(dict(row))
 
 
+def request_meeting(db: Session, user: CurrentUser, startup_id: int, milestone_id: int) -> Milestone:
+    """The mentor's nudge to a mentee: 'let's schedule a meeting about this.'"""
+    if not (is_admin(db, user.id) or is_startup_mentor(db, user.id, startup_id)):
+        raise HTTPException(status_code=403, detail="Only this startup's mentor can request a meeting.")
+
+    row = db.execute(
+        text(
+            """
+            update milestones
+            set meeting_requested_at = now()
+            where milestone_id = :milestone_id and startup_id = :startup_id
+            returning *
+            """
+        ),
+        {"milestone_id": milestone_id, "startup_id": startup_id},
+    ).mappings().first()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="This milestone doesn't exist.")
+
+    db.commit()
+    return Milestone.model_validate(dict(row))
+
+
 def list_notifications(db: Session, user: CurrentUser) -> list[MilestoneNotification]:
     """
     Milestones needing this user's attention, across every startup they're
     an accepted member of: brand new ones (still 'pending', i.e. not yet
-    acknowledged), 'in_progress' ones whose due date is close, and
-    'completed' ones still 'unverified' — the last of which is what puts a
-    milestone in front of the mentor once the team marks it done.
+    acknowledged), 'in_progress' ones whose due date is close, 'completed'
+    ones still 'unverified' (puts it in front of the mentor), and ones
+    where the mentor has asked for a meeting that hasn't been scheduled yet
+    (surfaced only to mentees — the mentor already knows they asked).
     """
     rows = db.execute(
         text(
@@ -167,6 +247,7 @@ def list_notifications(db: Session, user: CurrentUser) -> list[MilestoneNotifica
                   m.status = 'pending'
                   or (m.status = 'in_progress' and m.due_date is not null and m.due_date <= current_date + 7)
                   or (m.status = 'completed' and m.verification_status = 'unverified')
+                  or (m.meeting_requested_at is not null and sm.project_role != 'mentor')
               )
             order by m.due_date nulls last, m.milestone_id
             """

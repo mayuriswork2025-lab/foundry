@@ -1,6 +1,6 @@
 import { useEffect, useState, type ComponentType } from "react"
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom"
-import { BellRing, ChevronLeft, ChevronRight, Compass, Inbox, LayoutGrid, LogOut, SquarePen } from "lucide-react"
+import { BellRing, ChevronLeft, ChevronRight, Compass, Gavel, Inbox, LayoutGrid, LogOut, SquarePen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 import { listMilestoneNotifications } from "@/lib/milestones"
@@ -23,6 +23,7 @@ const mentorNavItems: NavItem[] = [
   { label: "Guiding Startups", to: "/dashboard/guiding", icon: Compass },
   { label: "Browse ideas", to: "/dashboard", icon: LayoutGrid },
   { label: "Mentor Requests", to: "/dashboard/inbox", icon: Inbox },
+  { label: "Demo Days", to: "/dashboard/demo-days", icon: Gavel },
 ]
 
 export function DashboardLayout() {

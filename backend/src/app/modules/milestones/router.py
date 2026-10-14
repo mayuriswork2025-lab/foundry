@@ -9,7 +9,14 @@ from ..auth.auth import CurrentUser, get_current_user
 from ..auth.permissions import require_admin_or_startup_member
 from ...db.client import get_db
 from . import controller
-from .models import Milestone, MilestoneCreate, MilestoneNotification, MilestoneStatusUpdate, MilestoneVerification
+from .models import (
+    Milestone,
+    MilestoneCreate,
+    MilestoneDetailsUpdate,
+    MilestoneNotification,
+    MilestoneStatusUpdate,
+    MilestoneVerification,
+)
 
 router = APIRouter(prefix="/api/startups/{startup_id}/milestones", tags=["milestones"])
 
@@ -47,6 +54,17 @@ def update_milestone_status(
     return controller.update_milestone_status(db, user, startup_id, milestone_id, payload)
 
 
+@router.patch("/{milestone_id}/details", response_model=Milestone)
+def update_milestone_details(
+    startup_id: int,
+    milestone_id: int,
+    payload: MilestoneDetailsUpdate,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return controller.update_milestone_details(db, user, startup_id, milestone_id, payload)
+
+
 @router.patch("/{milestone_id}/verify", response_model=Milestone)
 def verify_milestone(
     startup_id: int,
@@ -66,6 +84,16 @@ def reopen_milestone(
     db: Session = Depends(get_db),
 ):
     return controller.reopen_milestone(db, user, startup_id, milestone_id)
+
+
+@router.patch("/{milestone_id}/request-meeting", response_model=Milestone)
+def request_meeting(
+    startup_id: int,
+    milestone_id: int,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return controller.request_meeting(db, user, startup_id, milestone_id)
 
 
 @notifications_router.get("/notifications", response_model=list[MilestoneNotification])

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import { Crown, ListChecks, Pencil } from "lucide-react"
+import { Crown, ListChecks, Pencil, Rocket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { InviteSearch } from "@/components/InviteSearch"
@@ -17,6 +17,12 @@ import {
   type Startup,
   type UserSummary,
 } from "@/lib/startups"
+import { getCurrentDemoDayForStartup, type DemoDay } from "@/lib/demoDay"
+
+function daysUntil(iso: string): number {
+  const ms = new Date(iso).getTime() - Date.now()
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
+}
 
 export function IdeaDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -28,6 +34,7 @@ export function IdeaDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
+  const [currentDemoDay, setCurrentDemoDay] = useState<DemoDay | null>(null)
 
   const isFounder = idea != null && profile != null && idea.registeredBy === profile.userId
   const isMentor = profile?.roleName === "mentor"
@@ -49,6 +56,14 @@ export function IdeaDetailPage() {
       listMembers(startupId)
         .then(setMembers)
         .catch(() => setMembers(null))
+    }
+  }, [idea, startupId])
+
+  useEffect(() => {
+    if (idea?.registrationStatus === "approved") {
+      getCurrentDemoDayForStartup(startupId)
+        .then(setCurrentDemoDay)
+        .catch(() => setCurrentDemoDay(null))
     }
   }, [idea, startupId])
 
@@ -196,13 +211,23 @@ export function IdeaDetailPage() {
               </CardFooter>
             )}
             {idea.registrationStatus === "approved" && (
-              <CardFooter className="border-t border-border pt-6">
+              <CardFooter className="border-t border-border pt-6 gap-3">
                 <Button asChild variant="outline" className="rounded-full cursor-pointer">
                   <Link to={`/dashboard/ideas/${idea.startupId}/milestones`}>
                     <ListChecks className="w-4 h-4" />
                     Track milestones
                   </Link>
                 </Button>
+                {isFounder && (
+                  <Button asChild variant="outline" className="rounded-full cursor-pointer">
+                    <Link to={`/dashboard/ideas/${idea.startupId}/demo-day`}>
+                      <Rocket className="w-4 h-4" />
+                      {currentDemoDay?.dateConfirmedAt
+                        ? `Demo upcoming at ${currentDemoDay.venue ?? "TBD"} in ${daysUntil(currentDemoDay.eventDate)} days`
+                        : "Proceed to demo day"}
+                    </Link>
+                  </Button>
+                )}
               </CardFooter>
             )}
           </Card>

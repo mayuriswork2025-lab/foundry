@@ -31,7 +31,12 @@ demo day evaluations within a startup incubator program, backed by a
 │   │   │   └── migrate.py      # Utility: applies db/migrations/*.sql directly via uv
 │   │   ├── modules/
 │   │   │   ├── auth/               # Verifies the caller's JWT (PyJWT), authorization checks
-│   │   │   └── startups/           # One folder per business function: models/controller/router
+│   │   │   ├── users/              # User search, suggested mentors
+│   │   │   ├── startups/           # One folder per business function: models/controller/router
+│   │   │   ├── mentoring/          # Mentor requests and approvals
+│   │   │   ├── milestones/         # Milestones, verification, notifications
+│   │   │   ├── meetings/           # Milestone meetings, action items, comments
+│   │   │   └── demo_day/           # Demo days, judge sign-up, evaluations (scoring)
 │   │   └── main.py             # App assembly — mounts each module's router
 │   ├── pyproject.toml
 │   └── .env.example
@@ -113,7 +118,8 @@ filename order — these are the source of truth for the schema, not the SQLAlch
   ```
 
 - **Or directly with `uv`, no Supabase CLI/Docker needed** (useful against a hosted Postgres
-  database) — see `backend/README.md`'s "Applying migrations" section.
+  database) — see `backend/README.md`'s "Applying migrations" section. The target must still
+  be a Supabase database: the first migration references Supabase's `auth.users` table.
 
 - **After changing the schema**, update `backend/src/app/db/schema.py` to match.
 
@@ -122,16 +128,37 @@ filename order — these are the source of truth for the schema, not the SQLAlch
 The current schema (see `backend/db/migrations/`) covers:
 
 - `roles` — user roles (Admin, Mentor, Founder, Judge)
-- `users` — platform users, linked 1:1 to Supabase `auth.users`
+- `users` — platform users, with their own bcrypt `password_hash` (no Supabase Auth)
 - `startups` — registered startups
 - `startup_memberships` — many-to-many link between users and startups, with a project role
 - `milestones` — startup milestones with due dates, completion tracking, and mentor verification
 - `mentor_requests` — a startup's ask for a mentor
+- `mentor_request_targets` — up to 3 specific mentors a request is sent to
 - `mentor_assignments` — a mentor matched to an approved request
-- `meetings` — a meeting between a mentor and a startup under an assignment
-- `funding_requests` — a startup's ask for funding
+- `meetings` — a meeting on a milestone
+- `meeting_action_items` / `meeting_comments` — a meeting's checklist and discussion
+- `funding_requests` — a startup's ask for funding (table only — API not built yet)
 - `demo_days` — a demo day event
+- `demo_day_judges` — judges and mentors who signed up to judge a demo day
+- `demo_day_startups` — startups that joined a demo day, plus date confirmation
 - `evaluations` — a judge's score sheet for a startup at a demo day
+
+## Roles
+
+- **Founder** and **Mentor** are chosen at signup.
+- **Admin** and **Judge** are assigned, not self-selected — sign up normally, then promote
+  the account in the Supabase SQL editor:
+
+  ```sql
+  update users
+  set role_id = (select role_id from roles where role_name = 'judge')  -- or 'admin'
+  where email = 'someone@example.com';
+  ```
+
+- Both judges and mentors can sign up to judge a demo day. When a startup joins, it is
+  assigned to the signed-up judge with the fewest startups so far. Only that assigned judge
+  can score it (0–10 for innovation, technical, business, presentation), and only until the
+  demo day has passed.
 
 Table and column names, and every status/role value stored in them, are plain lowercase
 snake_case (unquoted, standard Postgres convention) — not quoted CamelCase — so they behave
@@ -149,7 +176,7 @@ row) lives in the API layer:
 - `backend/src/app/modules/auth/auth.py` — hashes/verifies passwords (bcrypt) and
   mints/verifies this backend's own JWTs (PyJWT); no external auth provider involved.
 - `backend/src/app/modules/auth/permissions.py` — role/membership checks (`is_admin`,
-  `is_startup_member`, `is_startup_founder`, `require_role`,
+  `is_startup_member`, `is_startup_founder`, `is_startup_mentor`, `is_startup_mentee`, `require_role`,
   `require_admin_or_startup_member`) that other modules' routes compose to decide what a
   request may do.
 

@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..auth.auth import CurrentUser
 from ..auth.permissions import get_current_user_role, is_admin, is_startup_member, is_startup_mentee
-from .models import DemoDay, DemoDayCreate, JudgeSummary
+from .models import DemoDay, DemoDayCreate, Evaluation, EvaluationSubmit, JudgeSummary
 
 # How many calendar months ahead the recurring monthly demo day is kept
 # materialized — this runs lazily on every list, no cron needed.
@@ -233,10 +233,10 @@ def create_demo_day(db: Session, user: CurrentUser, payload: DemoDayCreate) -> D
 
 
 def join_as_judge(db: Session, user: CurrentUser, demo_day_id: int) -> DemoDay:
-    """A mentor (or admin) signs themself up to judge — no separate 'judge' role, just mentors opting in."""
+    """A judge, mentor, or admin signs themself up to judge — mentors can opt in alongside dedicated judges."""
     role = get_current_user_role(db, user.id)
-    if not (role == "mentor" or is_admin(db, user.id)):
-        raise HTTPException(status_code=403, detail="Only a mentor can sign up to judge a demo day.")
+    if not (role in ("mentor", "judge") or is_admin(db, user.id)):
+        raise HTTPException(status_code=403, detail="Only a judge or mentor can sign up to judge a demo day.")
 
     row = db.execute(
         text("select * from demo_days where demo_day_id = :demo_day_id"), {"demo_day_id": demo_day_id}
@@ -362,3 +362,67 @@ def get_current_for_startup(db: Session, user: CurrentUser, startup_id: int) -> 
     if row is None:
         return None
     return _to_demo_day(db, row, user.id, startup_id=startup_id)
+
+
+_EVALUATION_SELECT = """
+    select e.evaluation_id, e.demo_day_id, d.event_name, d.event_date,
+           e.startup_id, s.startup_name,
+           e.innovation_score, e.technical_score, e.business_score,
+           e.presentation_score, e.overall_remarks
+    from evaluations e
+    join demo_days d on d.demo_day_id = e.demo_day_id
+    join startups s on s.startup_id = e.startup_id
+"""
+
+
+def list_my_evaluations(db: Session, user: CurrentUser) -> list[Evaluation]:
+    """Every startup this judge has been assigned (round-robin) to score."""
+    rows = db.execute(
+        text(_EVALUATION_SELECT + " where e.judge_id = :judge_id order by d.event_date, s.startup_name"),
+        {"judge_id": user.id},
+    ).mappings().all()
+    return [Evaluation.model_validate(dict(row)) for row in rows]
+
+
+def submit_evaluation(db: Session, user: CurrentUser, evaluation_id: int, payload: EvaluationSubmit) -> Evaluation:
+    """Only the assigned judge may score, and not after the demo day has passed."""
+    row = db.execute(
+        text(
+            """
+            select e.judge_id, d.event_date
+            from evaluations e
+            join demo_days d on d.demo_day_id = e.demo_day_id
+            where e.evaluation_id = :evaluation_id
+            """
+        ),
+        {"evaluation_id": evaluation_id},
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="This evaluation doesn't exist.")
+    if str(row[0]) != user.id:
+        raise HTTPException(status_code=403, detail="Only the assigned judge can score this startup.")
+    if row[1] < datetime.date.today():
+        raise HTTPException(status_code=409, detail="This demo day has already passed.")
+
+    db.execute(
+        text(
+            """
+            update evaluations
+            set innovation_score = :innovation_score,
+                technical_score = :technical_score,
+                business_score = :business_score,
+                presentation_score = :presentation_score,
+                overall_remarks = :overall_remarks,
+                updated_at = now()
+            where evaluation_id = :evaluation_id
+            """
+        ),
+        {**payload.model_dump(), "evaluation_id": evaluation_id},
+    )
+    db.commit()
+
+    updated = db.execute(
+        text(_EVALUATION_SELECT + " where e.evaluation_id = :evaluation_id"),
+        {"evaluation_id": evaluation_id},
+    ).mappings().first()
+    return Evaluation.model_validate(dict(updated))

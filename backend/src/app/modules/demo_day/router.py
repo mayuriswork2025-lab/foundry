@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ...db.client import get_db
 from ..auth.auth import CurrentUser, get_current_user
 from . import controller
-from .models import DemoDay, DemoDayCreate
+from .models import DemoDay, DemoDayCreate, Evaluation, EvaluationSubmit
 
 router = APIRouter(prefix="/api/demo-days", tags=["demo-day"])
 
@@ -49,6 +49,24 @@ def withdraw_as_judge(
     db: Session = Depends(get_db),
 ):
     return controller.withdraw_as_judge(db, user, demo_day_id)
+
+
+@router.get("/evaluations/mine", response_model=list[Evaluation])
+def list_my_evaluations(
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return controller.list_my_evaluations(db, user)
+
+
+@router.patch("/evaluations/{evaluation_id}", response_model=Evaluation)
+def submit_evaluation(
+    evaluation_id: int,
+    payload: EvaluationSubmit,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return controller.submit_evaluation(db, user, evaluation_id, payload)
 
 
 @startup_router.get("/current", response_model=DemoDay | None)

@@ -6,6 +6,8 @@ import datetime
 import uuid
 from typing import Literal
 
+from pydantic import Field
+
 from ...common.model import ApiModel
 
 
@@ -40,3 +42,27 @@ class DemoDayCreate(ApiModel):
     event_date: datetime.date
     venue: str | None = None
     theme: str | None = None
+
+
+class Evaluation(ApiModel):
+    """A judge's score sheet for one startup — scores stay null until submitted."""
+
+    evaluation_id: int
+    demo_day_id: int
+    event_name: str
+    event_date: datetime.date
+    startup_id: int
+    startup_name: str
+    innovation_score: float | None
+    technical_score: float | None
+    business_score: float | None
+    presentation_score: float | None
+    overall_remarks: str | None
+
+
+class EvaluationSubmit(ApiModel):
+    innovation_score: float = Field(ge=0, le=10)
+    technical_score: float = Field(ge=0, le=10)
+    business_score: float = Field(ge=0, le=10)
+    presentation_score: float = Field(ge=0, le=10)
+    overall_remarks: str | None = None

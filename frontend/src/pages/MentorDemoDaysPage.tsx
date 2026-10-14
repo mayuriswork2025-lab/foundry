@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { CalendarDays, Gavel, MapPin } from "lucide-react"
+import { JudgeEvaluations } from "@/components/JudgeEvaluations"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
 import { joinAsJudge, listDemoDays, withdrawAsJudge, type DemoDay } from "@/lib/demoDay"
@@ -118,6 +119,8 @@ export function MentorDemoDaysPage() {
           ))}
         </div>
       )}
+
+      <JudgeEvaluations />
     </div>
   )
 }

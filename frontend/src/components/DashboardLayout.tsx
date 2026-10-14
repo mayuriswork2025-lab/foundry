@@ -26,6 +26,10 @@ const mentorNavItems: NavItem[] = [
   { label: "Demo Days", to: "/dashboard/demo-days", icon: Gavel },
 ]
 
+const judgeNavItems: NavItem[] = [
+  { label: "Demo Days", to: "/dashboard/demo-days", icon: Gavel },
+]
+
 export function DashboardLayout() {
   const location = useLocation()
   const { profile, loading, signOut } = useAuth()
@@ -43,7 +47,8 @@ export function DashboardLayout() {
   if (!profile) return <Navigate to="/auth" replace />
 
   const initials = `${profile.firstName[0] ?? ""}${profile.lastName[0] ?? ""}`.toUpperCase()
-  const navItems = profile.roleName === "mentor" ? mentorNavItems : founderNavItems
+  const navItems =
+    profile.roleName === "mentor" ? mentorNavItems : profile.roleName === "judge" ? judgeNavItems : founderNavItems
 
   return (
     <div className="min-h-screen flex bg-background">
